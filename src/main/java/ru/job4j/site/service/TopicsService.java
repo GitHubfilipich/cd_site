@@ -88,8 +88,9 @@ public class TopicsService {
     public CategoryIdNameDTO getCategoryIdNameDTOByTopicId(int topicId)
             throws JsonProcessingException {
         var mapper = new ObjectMapper();
-        var text = String
-                .format("%s%scategoryIdName/%d", uriProvider.getUri(SERVICE_ID), DIRECT_SINGLE, topicId);
+        var text = new RestAuthCall(String
+                .format("%s%scategoryIdName/%d", uriProvider.getUri(SERVICE_ID), DIRECT_SINGLE, topicId)
+        ).get();
         return mapper.readValue(text, CategoryIdNameDTO.class);
     }
 
