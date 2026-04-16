@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import ru.job4j.site.dto.*;
 import ru.job4j.site.util.RestAuthCall;
@@ -20,6 +21,7 @@ public class NotificationService {
 
     private final EurekaUriProvider uriProvider;
     private static final String SERVICE_ID = "notification";
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void addSubscribeCategory(String token, int userId, int categoryId) {
         SubscribeCategory subscribeCategory = new SubscribeCategory(userId, categoryId);
@@ -141,12 +143,7 @@ public class NotificationService {
                                          FeedbackNotificationDTO feedbackNotification) {
         var url = String.format("%s/feedback/interview", uriProvider.getUri(SERVICE_ID));
         var mapper = new ObjectMapper();
-        try {
-            new RestAuthCall(url).post(
-                    token, mapper.writeValueAsString(feedbackNotification));
-        } catch (Exception e) {
-            log.error("API notification not found, error: {}", e.getMessage());
-        }
+        kafkaTemplate.send("job4j_feedback_notification", feedbackNotification);
     }
 
     /**
