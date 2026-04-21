@@ -8,3 +8,4 @@ target
 hs_err_pid*
 .idea
 /logs/site.log*
+/site.pid

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  site-service:
+    build: .
+    container_name: site-service
+    ports:
+      - "8080:8080"
+    environment:
+      # Переопределяем Eureka (используем имя сервиса из вашей сети)
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:9009/eureka
+
+      # Переопределяем Security (обращаемся к auth-service по имени контейнера)
+      - SECURITY_OAUTH2_RESOURCE_USERINFOURI=http://auth-service:9900/user
+
+      # Настройки для корректной регистрации в Eureka
+#      - EUREKA_INSTANCE_HOSTNAME=generator-service
+      - EUREKA_INSTANCE_HOSTNAME=host.docker.internal
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=false
+    networks:
+      - microservices-net
+
+networks:
+  microservices-net:
+    external: true
+    name: microservices-net
