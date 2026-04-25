@@ -26,13 +26,27 @@ import java.util.*;
 @Slf4j
 public class WisherServiceWebClient implements WisherService {
 
-    private WebClient webClientWisher;
+    private final EurekaUriProvider uriProvider;
+    private volatile WebClient webClientWisher;
     private static final String SERVICE_ID = "mock";
     private static final String DIRECT_SINGLE = "/wisher/";
     private static final String DIRECT_MULTIPLE = "/wishers/";
 
     public WisherServiceWebClient(EurekaUriProvider uriProvider) {
-        this.webClientWisher = WebClient.create(uriProvider.getUri(SERVICE_ID));
+        this.uriProvider = uriProvider;
+    }
+
+    private WebClient client() {
+        if (webClientWisher == null) {
+            synchronized (this) {
+                if (webClientWisher == null) {
+                    String baseUrl = uriProvider.getUri(SERVICE_ID);
+                    log.info("Init WebClient for {} service: {}", SERVICE_ID, baseUrl);
+                    webClientWisher = WebClient.create(baseUrl);
+                }
+            }
+        }
+        return webClientWisher;
     }
 
     /**
@@ -44,7 +58,7 @@ public class WisherServiceWebClient implements WisherService {
      */
     @Override
     public boolean saveWisherDto(String token, WisherDto wisherDto) {
-        var responseEntityMono = this.webClientWisher
+        var responseEntityMono = client()
                 .post()
                 .uri(DIRECT_SINGLE)
                 .header("Authorization", "Bearer " + token)
@@ -69,7 +83,7 @@ public class WisherServiceWebClient implements WisherService {
      */
     @Override
     public List<WisherDto> getAllWisherDtoByInterviewId(String token, String interviewId) {
-        Optional<ResponseEntity<List<WisherDto>>> listResponseEntity = this.webClientWisher
+        Optional<ResponseEntity<List<WisherDto>>> listResponseEntity = client()
                 .get()
                 .uri(DIRECT_MULTIPLE + "dto/" + interviewId)
                 .header("Authorization", "Bearer " + token)
@@ -90,7 +104,7 @@ public class WisherServiceWebClient implements WisherService {
      */
     @Override
     public List<UsersApprovedInterviewsDTO> getUsersIdWithCountedApprovedInterviews(String token) {
-        Optional<ResponseEntity<List<UsersApprovedInterviewsDTO>>> listResponseEntity = this.webClientWisher
+        Optional<ResponseEntity<List<UsersApprovedInterviewsDTO>>> listResponseEntity = client()
                 .get()
                 .uri(DIRECT_MULTIPLE + "approved/")
                 .header("Authorization", "Bearer " + token)
@@ -112,7 +126,7 @@ public class WisherServiceWebClient implements WisherService {
      */
     @Override
     public UsersApprovedInterviewsDTO getUserIdWithCountedApprovedInterviews(String token, String userId) {
-        Optional<ResponseEntity<UsersApprovedInterviewsDTO>> responseEntity = this.webClientWisher
+        Optional<ResponseEntity<UsersApprovedInterviewsDTO>> responseEntity = client()
                 .get()
                 .uri(DIRECT_MULTIPLE + "approved/" + userId)
                 .header("Authorization", "Bearer " + token)
@@ -142,7 +156,7 @@ public class WisherServiceWebClient implements WisherService {
         param.add("interviewId", interviewId);
         param.add("wisherId", wisherId);
         param.add("newApprove", String.valueOf(newApprove));
-        var setNewStatus = this.webClientWisher
+        var setNewStatus = client()
                 .post()
                 .uri(DIRECT_MULTIPLE + "approve/")
                 .header("Authorization", "Bearer " + token)
